@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>1年生A</title>
+  <style>
+    body {
+      margin:0;
+      overflow:hidden;
+      background: url("background1.jpg") no-repeat center center fixed;
+      background-size: cover;
+    }
+    video {
+      position:absolute;
+      width:100%; height:100%;
+      object-fit:cover;
+      transition: opacity 0.8s ease;
+    }
+    .hidden { opacity:0; pointer-events:none; }
+  </style>
+</head>
+<body>
+  <video id="v1" class="hidden" muted autoplay></video>
+  <video id="v2" class="hidden" muted></video>
+
+  <script>
+    let showing = "v1"; 
+    const correctVideos = ["correct1.mp4","correct2.mp4","correct3.mp4","correct4.mp4","correct5.mp4","correct6.mp4"];
+    const wrongvideos = ["wrong1.mp4","wrong2.mp4","wrong3.mp4","wrong4.mp4","wrong5.mp4"];
+    let bgCleared = false;
+    let correctIndex = 0;
+    let mode = "idle"; // "idle" | "wrong" | "correct"
+
+    document.body.addEventListener("keydown", e => {
+      if (e.key >= "1" && e.key <= "5") {
+        const idx = parseInt(e.key)-1;
+        playWrong(idx);
+      }
+      else if (e.key === "c") {
+        if (mode !== "wrong") {
+          correctIndex = 0;
+          mode = "correct";
+          playCorrectSequence();
+        }
+      }
+      // a,s,d,f → correct2,3,4,5から再生開始
+      else if (["a","s","d","f"].includes(e.key)) {
+        if (mode !== "wrong") {
+          const map = {a:1, s:2, d:3, f:4}; // correct2~5 のインデックス
+          correctIndex = map[e.key];
+          mode = "correct";
+          playCorrectSequence();
+        }
+      }
+      else if (e.key === "n") {
+        stopVideoAndShowBackground();
+      }
+    });
+
+    function playWrong(idx) {
+      mode = "wrong";
+      switchVideo(wrongvideos[idx], () => {
+        mode = "idle";
+      });
+    }
+
+    function playCorrectSequence() {
+      if (correctIndex < correctVideos.length) {
+        switchVideo(correctVideos[correctIndex], () => {
+          correctIndex++;
+          playCorrectSequence();
+        });
+      } else {
+        mode = "idle";
+      }
+    }
+
+    function switchVideo(path, onEnded) {
+      const current = document.getElementById(showing);
+      const next = document.getElementById(showing === "v1" ? "v2" : "v1");
+
+      next.src = path;
+      next.load();
+      next.classList.remove("hidden");
+      next.muted = false;
+      current.muted = true;
+
+      if (!bgCleared) {
+        next.addEventListener("play", () => {
+          document.body.style.background = "black";
+        }, { once:true });
+        bgCleared = true;
+      }
+
+      next.onended = () => {
+        if (onEnded) onEnded();
+      };
+
+      next.play();
+      current.classList.add("hidden");
+      showing = (showing === "v1") ? "v2" : "v1";
+    }
+
+    function stopVideoAndShowBackground() {
+      ["v1","v2"].forEach(id => {
+        const v = document.getElementById(id);
+        v.pause();
+        v.removeAttribute("src");
+        v.load();
+        v.classList.add("hidden");
+      });
+
+      const useAlt = Math.random() < 0.1;
+      const bgImage = useAlt ? "background2.jpg" : "background1.jpg";
+      document.body.style.background = `url('${bgImage}') no-repeat center center fixed`;
+      document.body.style.backgroundSize = "cover";
+
+      bgCleared = false;
+      mode = "idle";
+    }
+  </script>
+</body>
+</html>
